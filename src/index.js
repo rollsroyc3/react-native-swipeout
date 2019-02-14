@@ -1,6 +1,9 @@
 import tweenState from 'react-tween-state';
 import NativeButton from './NativeButton';
 import styles from './styles';
+import {
+    isValidHorizontalGesture,
+} from './util/gesture/index';
 
 import React, {
   Component,
@@ -103,6 +106,7 @@ const Swipeout = createReactClass({
     close: PropTypes.bool,
     left: PropTypes.array,
     onOpen: PropTypes.func,
+    onEnd: PropTypes.func,
     onClose: PropTypes.func,
     right: PropTypes.array,
     scroll: PropTypes.func,
@@ -142,22 +146,27 @@ const Swipeout = createReactClass({
       onStartShouldSetPanResponder: (event, gestureState) => true,
       onStartShouldSetPanResponderCapture: (event, gestureState) =>
         this.state.openedLeft || this.state.openedRight,
-      onMoveShouldSetPanResponderCapture: (event, gestureState) =>
-        Math.abs(gestureState.dx) > this.props.sensitivity &&
-        Math.abs(gestureState.dy) <= this.props.sensitivity,
+      onMoveShouldSetPanResponder: this._handleOnMoveShouldSetPanResponder,
+//       onMoveShouldSetPanResponderCapture: (event, gestureState) =>
+//         Math.abs(gestureState.dx) > this.props.sensitivity &&
+//         Math.abs(gestureState.dy) <= this.props.sensitivity,
       onPanResponderGrant: this._handlePanResponderGrant,
       onPanResponderMove: this._handlePanResponderMove,
       onPanResponderRelease: this._handlePanResponderEnd,
       onPanResponderTerminate: this._handlePanResponderEnd,
-      onShouldBlockNativeResponder: (event, gestureState) => false,
+//       onShouldBlockNativeResponder: (event, gestureState) => false,
       onPanResponderTerminationRequest: () => false,
     });
   },
-
+  
   componentWillReceiveProps: function (nextProps) {
     if (nextProps.close) this._close();
     if (nextProps.openRight) this._openRight();
     if (nextProps.openLeft) this._openLeft();
+  },
+  
+  _handleOnMoveShouldSetPanResponder(e: Object, gestureState: Object) {
+      return isValidHorizontalGesture(gestureState);
   },
 
   _handlePanResponderGrant: function (e: Object, gestureState: Object) {
@@ -206,6 +215,9 @@ const Swipeout = createReactClass({
 
   _handlePanResponderEnd: function (e: Object, gestureState: Object) {
     if (this.props.disabled) return;
+    
+    this.props.onEnd && this.props.onEnd(this.props.sectionID, this.props.rowID);
+    
     var posX = gestureState.dx;
     var contentPos = this.state.contentPos;
     var contentWidth = this.state.contentWidth;
